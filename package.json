@@ -9,7 +9,8 @@
   "author": "seetheory",
   "license": "MIT",
   "dependencies": {
+    "chrome-aws-lambda": "^2.1.1",
     "express": "^4.17.1",
-    "puppeteer": "^2.1.1"
+    "puppeteer-core": "^2.1.1"
   }
 }

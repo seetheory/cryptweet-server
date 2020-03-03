@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
-const puppeteer = require('puppeteer')
+const puppeteer = require('puppeteer-core')
+const chrome = require('chrome-aws-lambda')
 
 app.use(express.json())
 app.use((req, res, next) => {
@@ -13,9 +14,13 @@ app.use((req, res, next) => {
 /**
  * Load the publicly shared key for a twitter account
  **/
-app.get('/publickey', async (req, res) => {
-  const { user } = req.query
-  const browser = await puppeteer.launch()
+app.get('/publickey/:user', async (req, res) => {
+  const { user } = req.params
+  const browser = await puppeteer.launch({
+    args: chrome.args,
+    executablePath: await chrome.executablePath,
+    headless: chrome.headless
+  })
   const page = await browser.newPage()
   page.on('response', async (_res) => {
     let data
@@ -28,29 +33,26 @@ app.get('/publickey', async (req, res) => {
         url.indexOf('UserByScreenName' !== -1) &&
         url.indexOf(`"screen_name":"${user}"`) !== -1
       ) {
+        console.log(data)
         // console.log(data.data.user.legacy)
         const addressRegex = /0x[0-9a-fA-F]{66}/g
         const profile = data.data.user.legacy
         const match = profile.description.match(addressRegex)
-        if (match.length === 0) return
-        res.json({
-          publicKey: match[0]
-        })
+        if (match.length === 0) {
+          res.status(404).json({ error: 'No public key found in user description' })
+        } else {
+          res.set('Cache-Control', `max-age=${60 * 60}, s-maxage=${60 * 60}`)
+          res.json({
+            publicKey: match[0]
+          })
+        }
         await browser.close()
       }
     } catch (err) {
       console.log(err)
     }
   })
-  await Promise.all([
-    page.goto(`https://twitter.com/${user}`),
-    page.waitForNavigation({ waitUntil: 'domcontentloaded' })
-  ])
-  // console.log(await page.content())
-  // await new Promise(r => setTimeout(r, 2000))
-  // const el = await page.$eval('div[data-testid="UserDescription"]')
-  // console.log(el)
-  // await browser.close()
+  await page.goto(`https://twitter.com/${user}`)
 })
 
 /**
@@ -77,4 +79,4 @@ app.post('/eth/transaction', async (req, res) => {
 
 })
 
-app.listen(4000)
+module.exports = app
