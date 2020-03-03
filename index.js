@@ -1,8 +1,8 @@
 const express = require('express')
-const app = express()
 const puppeteer = require('puppeteer-core')
 const chrome = require('chrome-aws-lambda')
 
+const app = express()
 app.use(express.json())
 app.use((req, res, next) => {
   res.set('access-control-allow-origin', '*')
@@ -53,30 +53,6 @@ app.get('/publickey/:user', async (req, res) => {
     }
   })
   await page.goto(`https://twitter.com/${user}`)
-})
-
-/**
- * Send an encrypted string for
- **/
-app.get('/encrypt', async (req, res) => {
-})
-
-app.get('/eos/:username', async (req, res) => {
-
-})
-
-app.get('/eth/:address', async (req, res) => {
-
-})
-
-// To set we can directly send a transaction
-// Sign from browser and move with a post request
-app.post('/eos/transaction', async (req, res) => {
-
-})
-
-app.post('/eth/transaction', async (req, res) => {
-
 })
 
 module.exports = app
